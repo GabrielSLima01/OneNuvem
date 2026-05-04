@@ -316,3 +316,14 @@ java -cp DNS DnsClient REMOVE onenuvem
 5. O cliente usa esse endereco para se conectar no servidor.
 
 Essa implementacao foi feita de forma basica, usando apenas bibliotecas padrao do Java.
+# Registrar um serviço
+java -cp DNS DnsClient REGISTER web 192.168.1.1 8080
+
+# Consultar um serviço
+java -cp DNS DnsClient LOOKUP web
+
+# Listar todos
+java -cp DNS DnsClient LIST
+
+# Remover um serviço
+java -cp DNS DnsClient REMOVE web
