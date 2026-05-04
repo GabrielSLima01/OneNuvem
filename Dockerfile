@@ -6,17 +6,13 @@ COPY DNS ./DNS
 COPY Middleware ./Middleware
 COPY Requests ./Requests
 COPY Demo ./Demo
-COPY Server ./Server
 
 RUN mkdir /app && \
     javac -encoding UTF-8 -d /app/classes \
         DNS/*.java \
         Middleware/*.java \
         Requests/*.java \
-        Demo/*.java \
-        Server/protocol/*.java \
-        Server/serverbase/*.java \
-        Server/storage/*.java
+        Demo/*.java
 
 FROM eclipse-temurin:21-jre
 
