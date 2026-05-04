@@ -1,0 +1,12 @@
+.git
+*.class
+*.jar
+*.log
+target
+.idea
+.vscode
+Demo/*.class
+DNS/*.class
+Middleware/*.class
+Requests/*.class
+Server/**/*.class

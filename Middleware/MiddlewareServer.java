@@ -57,7 +57,7 @@ public class MiddlewareServer {
     }
 
     public static void main(String[] args) throws IOException {
-        Map<String, String> config = loadDotEnv();
+        Map<String, String> config = loadConfig();
         NodeManager nodeManager = new NodeManager();
 
         loadNodes(nodeManager, config);
@@ -68,9 +68,21 @@ public class MiddlewareServer {
         server.start();
     }
 
+    private static Map<String, String> loadConfig() throws IOException {
+        Map<String, String> config = loadDotEnv();
+
+        config.putAll(System.getenv());
+
+        return config;
+    }
+
     private static Map<String, String> loadDotEnv() throws IOException {
         Map<String, String> config = new HashMap<>();
         Path envPath = Path.of(".env");
+
+        if (!Files.exists(envPath)) {
+            return config;
+        }
 
         for (String line : Files.readAllLines(envPath, StandardCharsets.UTF_8)) {
             String trimmedLine = line.trim();
@@ -116,7 +128,13 @@ public class MiddlewareServer {
     }
 
     private static String getRequiredValue(Map<String, String> config, String key) {
-        return config.get(key);
+        String value = config.get(key);
+
+        if (value == null || value.trim().isEmpty()) {
+            throw new IllegalArgumentException("Configuracao obrigatoria ausente: " + key);
+        }
+
+        return value;
     }
 
     private static int getRequiredPort(Map<String, String> config, String key) {

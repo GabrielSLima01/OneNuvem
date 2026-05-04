@@ -40,6 +40,17 @@ public class NodeManager {
         return null;
     }
 
+    public synchronized Node getNextNode() {
+        if (nodes.isEmpty()) {
+            return null;
+        }
+
+        Node node = nodes.get(nextIndex);
+        nextIndex = (nextIndex + 1) % nodes.size();
+
+        return node;
+    }
+
     public synchronized void markAsHealthy(Node node) {
         node.markHealthy();
     }
