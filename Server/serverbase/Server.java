@@ -4,6 +4,7 @@ import Server.storage.FileStorageService;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+// Classe principal do servidor que inicia o servidor, aceita conexões de clientes e cria threads para lidar com cada cliente
 public class Server {
 
     public static void main(
@@ -14,13 +15,13 @@ public class Server {
 
             FileStorageService
                     storageService =
-                    new FileStorageService(
+                    new FileStorageService(             // Cria uma instância do serviço de armazenamento de arquivos, passando o caminho de armazenamento definido na configuração do servidor
                             ServerConfig
                                     .STORAGE_PATH
                     );
 
             ServerSocket serverSocket =
-                    new ServerSocket(
+                    new ServerSocket(                   // Cria um ServerSocket para ouvir na porta definida na configuração do servidor
                             ServerConfig.PORT
                     );
 
@@ -32,7 +33,7 @@ public class Server {
             while (true) {
 
                 Socket clientSocket =
-                        serverSocket.accept();
+                        serverSocket.accept();          // Aceita uma conexão de cliente e retorna um Socket para comunicação com o cliente
 
                 System.out.println(
                         "Cliente conectado"
@@ -41,13 +42,15 @@ public class Server {
                 Thread thread =
                         new Thread(
                                 new ClientHandler(
-                                        clientSocket,
+                                        clientSocket,           // Cria uma nova thread para lidar com a comunicação com o cliente, passando o Socket do cliente e o serviço de armazenamento de arquivos
                                         storageService
                                 )
                         );
 
                 thread.start();
             }
+
+            
 
         } catch (Exception e) {
 

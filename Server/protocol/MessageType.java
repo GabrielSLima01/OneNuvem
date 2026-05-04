@@ -1,5 +1,5 @@
 package Server.protocol;
-
+// Classe que define os tipos de mensagens usadas na comunicação entre cliente e servidor
 public class MessageType {
 
     public static final String UPLOAD =

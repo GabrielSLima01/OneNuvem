@@ -5,6 +5,7 @@ import java.io.FileReader;
 import java.util.HashMap;
 import java.util.Map;
 
+// Classe responsável por carregar as variáveis de ambiente do arquivo server.env
 public class EnvLoader {
 
     private static final Map<String, String>

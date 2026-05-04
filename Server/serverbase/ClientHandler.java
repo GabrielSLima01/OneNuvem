@@ -9,6 +9,8 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.net.Socket;
 
+
+// Classe que lida com a comunicação com um cliente
 public class ClientHandler
         implements Runnable {
 
@@ -19,14 +21,14 @@ public class ClientHandler
 
     public ClientHandler(
             Socket clientSocket,
-            FileStorageService storageService
+            FileStorageService storageService           // Serviço de armazenamento de arquivos para salvar/ler os arquivos enviados/solicitados pelos clientes
     ) {
 
         this.clientSocket =
-                clientSocket;
+                clientSocket;                   // Armazena o socket do cliente para comunicação
 
         this.storageService =
-                storageService;
+                storageService;                 // Armazena o serviço de armazenamento para uso nas operações de upload/download
     }
 
     @Override
@@ -35,38 +37,38 @@ public class ClientHandler
         try {
 
             DataInputStream in =
-                    new DataInputStream(
-                            clientSocket
+                    new DataInputStream(                // Cria um DataInputStream para ler os dados enviados pelo cliente
+                            clientSocket                        
                                     .getInputStream()
                     );
 
             DataOutputStream out =
-                    new DataOutputStream(
+                    new DataOutputStream(               // Cria um DataOutputStream para enviar os dados de volta para o cliente
                             clientSocket
                                     .getOutputStream()
                     );
 
             String type =
-                    PacketReader
+                    PacketReader                        //Lê o tipo da mensagem enviada pelo cliente (UPLOAD, DOWNLOAD, etc.)
                             .readMessageType(in);
 
             if (
-                    MessageType.UPLOAD
+                    MessageType.UPLOAD                  // Verifica se o tipo da mensagem é UPLOAD    
                             .equals(type)
             ) {
 
                 handleUpload(
-                        in,
+                        in,                            // Lida com a operação de upload, lendo o nome do arquivo e os dados enviados pelo cliente, salvando o arquivo usando o serviço de armazenamento e enviando uma resposta de sucesso para o cliente       
                         out
                 );
 
             } else if (
                     MessageType.DOWNLOAD
-                            .equals(type)
+                            .equals(type)               // Verifica se o tipo da mensagem é DOWNLOAD
             ) {
 
                 handleDownload(
-                        in,
+                        in,                             // Lida com a operação de download, lendo o nome do arquivo solicitado pelo cliente, lendo os dados do arquivo usando o serviço de armazenamento e enviando os dados de volta para o cliente
                         out
                 );
             }
@@ -80,20 +82,20 @@ public class ClientHandler
     }
 
     private void handleUpload(
-            DataInputStream in,
+            DataInputStream in,                 // Lida com a operação de upload, lendo o nome do arquivo e os dados enviados pelo cliente, salvando o arquivo usando o serviço de armazenamento e enviando uma resposta de sucesso para o cliente
             DataOutputStream out
     ) throws Exception {
 
         String fileName =
-                PacketReader
+                PacketReader                    // Lê o nome do arquivo enviado pelo cliente
                         .readFileName(in);
 
         byte[] data =
-                PacketReader
+                PacketReader                    // Lê os dados do arquivo enviado pelo cliente
                         .readFileData(in);
 
         storageService.saveFile(
-                fileName,
+                fileName,                       // Salva o arquivo usando o serviço de armazenamento, passando o nome do arquivo e os dados do arquivo
                 data
         );
 
@@ -103,27 +105,27 @@ public class ClientHandler
         );
 
         PacketWriter.sendSuccess(
-                out,
+                out,                            // Envia uma resposta de sucesso para o cliente, indicando que o arquivo foi salvo com sucesso
                 "Arquivo salvo"
         );
     }
 
     private void handleDownload(
-            DataInputStream in,
+            DataInputStream in,                 // Lida com a operação de download, lendo o nome do arquivo solicitado pelo cliente, lendo os dados do arquivo usando o serviço de armazenamento e enviando os dados de volta para o cliente
             DataOutputStream out
     ) throws Exception {
 
         String fileName =
-                PacketReader
+                PacketReader                    // Lê o nome do arquivo solicitado pelo cliente
                         .readFileName(in);
 
         byte[] data =
-                storageService.readFile(
+                storageService.readFile(         // Lê os dados do arquivo usando o serviço de armazenamento, passando o nome do arquivo solicitado pelo cliente
                         fileName
                 );
 
         PacketWriter.sendFile(
-                out,
+                out,                            // Envia os dados do arquivo de volta para o cliente usando o PacketWriter, passando o DataOutputStream e os dados do arquivo lidos do serviço de armazenamento
                 data
         );
 
