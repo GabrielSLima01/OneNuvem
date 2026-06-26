@@ -3,6 +3,8 @@ package Server.serverbase;
 import Server.storage.FileStorageService;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class Server {
 
@@ -11,13 +13,12 @@ public class Server {
         try (ServerSocket serverSocket = new ServerSocket(ServerConfig.PORT)) {
 
             FileStorageService storageService = new FileStorageService(ServerConfig.STORAGE_PATH);
-            System.out.println("Servidor iniciado na porta " + ServerConfig.PORT);
+            ExecutorService executorService = Executors.newFixedThreadPool(Math.max(8, Runtime.getRuntime().availableProcessors() * 2));
+            System.out.println("No de armazenamento iniciado na porta " + ServerConfig.PORT);
 
             while (true) {
                 Socket clientSocket = serverSocket.accept();
-                System.out.println("Cliente conectado");
-                Thread thread = new Thread(new ClientHandler(clientSocket, storageService));
-                thread.start();
+                executorService.submit(new ClientHandler(clientSocket, storageService));
             }
 
         } catch (Exception e) {

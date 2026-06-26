@@ -1,102 +1,95 @@
-package requests;
+package Requests;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import Common.http.JsonUtil;
+import DTOs.AuthDTO;
+import DTOs.DashboardDTO;
+import DTOs.FileItemDTO;
+import DTOs.LogDTO;
+import DTOs.UploadSessionDTO;
+import Responses.ApiResponse;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.Socket;
-import java.util.HashMap;
-import java.util.Map;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 public class GatewayClient {
 
     private final String host;
     private final int port;
+    private String token;
 
     public GatewayClient(String host, int port) {
         this.host = host;
         this.port = port;
     }
 
-    private PacketReader.Packet send(MessageType type, Map<String, String> headers, byte[] payload)
-            throws IOException {
+    public AuthDTO login(LoginRequest request) {
+        String body = "{\"email\":\"" + request.email() + "\",\"password\":\"" + request.password() + "\"}";
+        ApiResponse<?> response = request("POST", "/api/auth/login", body);
+        return JsonUtil.fromJson(JsonUtilString.valueOf(response.data()), AuthDTO.class);
+    }
 
+    public UploadSessionDTO initUpload(String jsonBody) {
+        ApiResponse<?> response = request("POST", "/api/files/upload/init", jsonBody);
+        return JsonUtil.fromJson(JsonUtilString.valueOf(response.data()), UploadSessionDTO.class);
+    }
+
+    public List<FileItemDTO> listFiles() {
+        String response = rawRequest("GET", "/api/files", "");
+        return List.of();
+    }
+
+    public DashboardDTO dashboard() {
+        String response = rawRequest("GET", "/api/dashboard", "");
+        return JsonUtil.fromJson(response, DashboardDTO.class);
+    }
+
+    public List<LogDTO> logs() {
+        rawRequest("GET", "/api/logs", "");
+        return List.of();
+    }
+
+    private ApiResponse<?> request(String method, String path, String body) {
+        String response = rawRequest(method, path, body);
+        return JsonUtil.fromJson(response.substring(response.indexOf("\r\n\r\n") + 4), ApiResponse.class);
+    }
+
+    private String rawRequest(String method, String path, String body) {
         try (Socket socket = new Socket(host, port);
-             DataOutputStream out = new DataOutputStream(socket.getOutputStream());
-             DataInputStream in = new DataInputStream(socket.getInputStream())) {
+             OutputStream output = socket.getOutputStream();
+             BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8))) {
+            byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
+            StringBuilder request = new StringBuilder()
+                    .append(method).append(" ").append(path).append(" HTTP/1.1\r\n")
+                    .append("Host: ").append(host).append("\r\n")
+                    .append("Content-Type: application/json\r\n")
+                    .append("Content-Length: ").append(bytes.length).append("\r\n");
+            if (token != null) {
+                request.append("Authorization: Bearer ").append(token).append("\r\n");
+            }
+            request.append("\r\n").append(body);
+            output.write(request.toString().getBytes(StandardCharsets.UTF_8));
+            output.flush();
 
-            PacketWriter.writePacket(out, type, headers, payload);
-
-            return PacketReader.readPacket(in);
+            StringBuilder response = new StringBuilder();
+            String line;
+            while ((line = input.readLine()) != null) {
+                response.append(line).append("\n");
+            }
+            return response.toString();
+        } catch (Exception exception) {
+            throw new IllegalStateException("Falha ao chamar gateway", exception);
         }
     }
 
-    public void registerNode(String nodeId, String dns, String host, int port) throws IOException {
-        Map<String, String> headers = new HashMap<>();
-        headers.put(ProtocolConstants.HEADER_NODE_ID, nodeId);
-        headers.put(ProtocolConstants.HEADER_DNS_NAME, dns);
-        headers.put(ProtocolConstants.HEADER_HOST, host);
-        headers.put(ProtocolConstants.HEADER_PORT, String.valueOf(port));
-
-        PacketReader.Packet response = send(MessageType.REGISTER_NODE, headers, new byte[0]);
-
-        validateSuccess(response);
-    }
-
-    public void heartbeat(String nodeId) throws IOException {
-        Map<String, String> headers = new HashMap<>();
-        headers.put(ProtocolConstants.HEADER_NODE_ID, nodeId);
-
-        PacketReader.Packet response = send(MessageType.HEARTBEAT, headers, new byte[0]);
-
-        validateSuccess(response);
-    }
-
-    public void uploadFile(String fileName, byte[] data) throws IOException {
-        Map<String, String> headers = new HashMap<>();
-        headers.put(ProtocolConstants.HEADER_FILE_NAME, fileName);
-
-        PacketReader.Packet response = send(MessageType.UPLOAD_FILE, headers, data);
-
-        validateSuccess(response);
-
-        String checksum = response.getHeaders().get(ProtocolConstants.HEADER_CHECKSUM);
-        String nodeId = response.getHeaders().get(ProtocolConstants.HEADER_NODE_ID);
-
-        System.out.println("Upload OK");
-        System.out.println("Checksum: " + checksum);
-        System.out.println("Node: " + nodeId);
-    }
-
-    public byte[] downloadFile(String fileName) throws IOException {
-        Map<String, String> headers = new HashMap<>();
-        headers.put(ProtocolConstants.HEADER_FILE_NAME, fileName);
-
-        PacketReader.Packet response = send(MessageType.DOWNLOAD_FILE, headers, new byte[0]);
-
-        if (response.getType() != MessageType.FILE_DATA) {
-            throw new IOException("Falha no download: " + response.getHeaders());
+    private static final class JsonUtilString {
+        private JsonUtilString() {
         }
 
-        return response.getPayload();
-    }
-
-    public String[] listFiles() throws IOException {
-        PacketReader.Packet response = send(MessageType.LIST_FILES, new HashMap<>(), new byte[0]);
-
-        validateSuccess(response);
-
-        String files = response.getHeaders().get(ProtocolConstants.HEADER_FILES);
-
-        if (files == null || files.isEmpty()) {
-            return new String[0];
-        }
-
-        return files.split(",");
-    }
-
-    private void validateSuccess(PacketReader.Packet response) throws IOException {
-        if (response.getType() != MessageType.SUCCESS) {
-            throw new IOException("Erro: " + response.getHeaders());
+        static String valueOf(Object value) {
+            return new String(JsonUtil.toJsonBytes(value), StandardCharsets.UTF_8);
         }
     }
 }

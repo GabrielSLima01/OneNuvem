@@ -1,5 +1,6 @@
 package Server.serverbase;
 import Server.protocol.MessageType;
+import Server.protocol.Packet;
 import Server.protocol.PacketReader;
 import Server.protocol.PacketWriter;
 import Server.storage.FileStorageService;
@@ -23,43 +24,36 @@ public class ClientHandler implements Runnable {
 
         try(Socket socket = clientSocket) {
 
-            DataInputStream in = new DataInputStream(clientSocket.getInputStream());
-            DataOutputStream out = new DataOutputStream(clientSocket.getOutputStream());
-            String type = PacketReader.readMessageType(in);
+            DataInputStream in = new DataInputStream(socket.getInputStream());
+            DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+            Packet packet = PacketReader.readPacket(in);
 
-            if (MessageType.UPLOAD.equals(type)) {
-
-                handleUpload(in,out);
-
-            } else if (MessageType.DOWNLOAD.equals(type)) {
-
-                handleDownload(in, out);
+            if (MessageType.STORE_CHUNK.equals(packet.type())) {
+                handleStoreChunk(packet, out);
+            } else if (MessageType.READ_CHUNK.equals(packet.type())) {
+                handleReadChunk(packet, out);
+            } else if (MessageType.HEALTH.equals(packet.type())) {
+                PacketWriter.sendSuccess(out, "healthy");
+            } else {
+                PacketWriter.sendError(out, "Tipo de mensagem nao suportado");
             }
-            clientSocket.close();
 
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private void handleUpload(DataInputStream in, DataOutputStream out) throws Exception {
-
-        String fileName =PacketReader.readFileName(in);
-        byte[] data =PacketReader.readFileData(in);
-
-        storageService.saveFile(fileName,data);
-
-        System.out.println("Upload recebido: " + fileName);
-        PacketWriter.sendSuccess(out,"Arquivo salvo");
+    private void handleStoreChunk(Packet packet, DataOutputStream out) throws Exception {
+        String fileId = packet.headers().get("fileId");
+        int chunkIndex = Integer.parseInt(packet.headers().get("chunkIndex"));
+        storageService.saveChunk(fileId, chunkIndex, packet.payload());
+        PacketWriter.sendSuccess(out, "Chunk salvo");
     }
 
-    private void handleDownload(DataInputStream in, DataOutputStream out) throws Exception {
-
-        String fileName = PacketReader.readFileName(in);
-        byte[] data = storageService.readFile(fileName);
-
+    private void handleReadChunk(Packet packet, DataOutputStream out) throws Exception {
+        String fileId = packet.headers().get("fileId");
+        int chunkIndex = Integer.parseInt(packet.headers().get("chunkIndex"));
+        byte[] data = storageService.readChunk(fileId, chunkIndex);
         PacketWriter.sendFile(out, data);
-
-        System.out.println("Download enviado: " + fileName);
     }
 }

@@ -2,27 +2,32 @@ package Server.protocol;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.Map;
 
 public class PacketWriter {
 
-    public static void sendSuccess(DataOutputStream out, String message) throws IOException {
-
-        out.writeUTF(MessageType.SUCCESS);
-        out.writeUTF(message);
-        out.flush();
+    public static void writePacket(DataOutputStream output, String type, Map<String, String> headers, byte[] payload)
+            throws IOException {
+        output.writeUTF(type);
+        output.writeInt(headers.size());
+        for (Map.Entry<String, String> entry : headers.entrySet()) {
+            output.writeUTF(entry.getKey());
+            output.writeUTF(entry.getValue());
+        }
+        output.writeInt(payload.length);
+        output.write(payload);
+        output.flush();
     }
 
-    public static void sendError(DataOutputStream out, String message) throws IOException {
-
-        out.writeUTF(MessageType.ERROR);
-        out.writeUTF(message);
-        out.flush();
+    public static void sendSuccess(DataOutputStream output, String message) throws IOException {
+        writePacket(output, MessageType.SUCCESS, Map.of("message", message), new byte[0]);
     }
 
-    public static void sendFile(DataOutputStream out, byte[] data) throws IOException {
+    public static void sendError(DataOutputStream output, String message) throws IOException {
+        writePacket(output, MessageType.ERROR, Map.of("message", message), new byte[0]);
+    }
 
-        out.writeInt(data.length);
-        out.write(data);
-        out.flush();
+    public static void sendFile(DataOutputStream output, byte[] data) throws IOException {
+        writePacket(output, MessageType.FILE_DATA, Map.of(), data);
     }
 }

@@ -1,9 +1,8 @@
 package Server.serverbase;
-import java.util.Optional;
 
 public class ServerConfig {
 
-    public static final int PORT = Integer.parseInt(Optional.ofNullable(EnvLoader.get("SERVER_PORT")).orElse("3000"));
-    public static final String STORAGE_PATH = EnvLoader.get("STORAGE_PATH");
+    public static final int PORT = Integer.parseInt(EnvLoader.getOrDefault("SERVER_PORT", "9101"));
+    public static final String STORAGE_PATH = EnvLoader.getOrDefault("STORAGE_PATH", "storage/default");
 
 }

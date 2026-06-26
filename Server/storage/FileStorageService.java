@@ -1,38 +1,32 @@
 package Server.storage;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 public class FileStorageService {
 
     private final String storagePath;
 
     public FileStorageService(String storagePath) {
-
         this.storagePath = storagePath;
         File directory = new File(storagePath);
-
         if (!directory.exists()) {
-                directory.mkdirs();
+            directory.mkdirs();
         }
     }
 
-    public void saveFile(String fileName, byte[] data) throws IOException {
-
-        String filePath = storagePath + "/" + fileName;
-
-        try(FileOutputStream fos = new FileOutputStream(filePath)){
-                fos.write(data);
-                fos.close();
-        }
-
-        System.out.println("Arquivo salvo: " + fileName);
+    public void saveChunk(String fileId, int chunkIndex, byte[] data) throws IOException {
+        Path path = chunkPath(fileId, chunkIndex);
+        Files.createDirectories(path.getParent());
+        Files.write(path, data);
     }
 
-    public byte[] readFile(String fileName) throws IOException {
+    public byte[] readChunk(String fileId, int chunkIndex) throws IOException {
+        return Files.readAllBytes(chunkPath(fileId, chunkIndex));
+    }
 
-        File file = new File(storagePath + "/" + fileName);
-
-        return java.nio.file.Files.readAllBytes(file.toPath());
+    private Path chunkPath(String fileId, int chunkIndex) {
+        return Path.of(storagePath, fileId, chunkIndex + ".chk");
     }
 }
