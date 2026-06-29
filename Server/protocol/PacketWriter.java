@@ -30,4 +30,8 @@ public class PacketWriter {
     public static void sendFile(DataOutputStream output, byte[] data) throws IOException {
         writePacket(output, MessageType.FILE_DATA, Map.of(), data);
     }
+
+    public static void sendAuthError(DataOutputStream out) throws IOException {
+        writePacket(out, MessageType.ERROR, Map.of("message", "Token inválido ou expirado"), new byte[0]);
+    }
 }

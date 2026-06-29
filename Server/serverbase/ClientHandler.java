@@ -28,12 +28,34 @@ public class ClientHandler implements Runnable {
             DataOutputStream out = new DataOutputStream(socket.getOutputStream());
             Packet packet = PacketReader.readPacket(in);
 
-            if (MessageType.STORE_CHUNK.equals(packet.type())) {
-                handleStoreChunk(packet, out);
-            } else if (MessageType.READ_CHUNK.equals(packet.type())) {
-                handleReadChunk(packet, out);
-            } else if (MessageType.HEALTH.equals(packet.type())) {
+            if (MessageType.HEALTH.equals(packet.type())) {
                 PacketWriter.sendSuccess(out, "healthy");
+                return;
+            }
+
+            String token = packet.headers().get("authorization");
+
+            if (token == null) {
+                PacketWriter.sendAuthError(out);
+                System.out.println("Conexão rejeitada: token ausente");
+                return;
+            }
+
+            String userId;
+            try {
+                userId = JwtValidator.validate(token);
+            } catch (Exception e) {
+                PacketWriter.sendAuthError(out);
+                System.out.println("Conexão rejeitada: token inválido");
+                return;
+            }
+
+            System.out.println("Usuário autenticado: " + userId);
+
+            if (MessageType.STORE_CHUNK.equals(packet.type())) {
+                handleStoreChunk(packet, out, userId);
+            } else if (MessageType.READ_CHUNK.equals(packet.type())) {
+                handleReadChunk(packet, out, userId);
             } else {
                 PacketWriter.sendError(out, "Tipo de mensagem nao suportado");
             }
@@ -43,14 +65,14 @@ public class ClientHandler implements Runnable {
         }
     }
 
-    private void handleStoreChunk(Packet packet, DataOutputStream out) throws Exception {
+    private void handleStoreChunk(Packet packet, DataOutputStream out, String userId) throws Exception {
         String fileId = packet.headers().get("fileId");
         int chunkIndex = Integer.parseInt(packet.headers().get("chunkIndex"));
         storageService.saveChunk(fileId, chunkIndex, packet.payload());
         PacketWriter.sendSuccess(out, "Chunk salvo");
     }
 
-    private void handleReadChunk(Packet packet, DataOutputStream out) throws Exception {
+    private void handleReadChunk(Packet packet, DataOutputStream out, String userId) throws Exception {
         String fileId = packet.headers().get("fileId");
         int chunkIndex = Integer.parseInt(packet.headers().get("chunkIndex"));
         byte[] data = storageService.readChunk(fileId, chunkIndex);
