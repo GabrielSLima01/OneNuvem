@@ -8,6 +8,7 @@ import Server.storage.FileStorageService;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.net.Socket;
+import Common.util.ChecksumUtil;
 
 public class ClientHandler implements Runnable {
 
@@ -47,15 +48,23 @@ public class ClientHandler implements Runnable {
         }
     }
 
-    private void handleStoreChunk(
-            Packet packet,
-            DataOutputStream out
-    ) throws Exception {
+    private void handleStoreChunk(Packet packet, DataOutputStream out) throws Exception {
         String fileId = packet.headers().get("fileId");
-        int chunkIndex = Integer.parseInt(
-                packet.headers().get("chunkIndex")
-        );
-        storageService.saveChunk(fileId, chunkIndex, packet.payload());
+        int chunkIndex = Integer.parseInt(packet.headers().get("chunkIndex"));
+        String expectedChecksum = packet.headers().get("checksum");
+        byte[] data = packet.payload();
+
+        if (expectedChecksum == null) {
+            PacketWriter.sendError(out, "Checksum ausente");
+            return;
+        }
+
+        String actualChecksum = ChecksumUtil.sha256(data);
+        if (!actualChecksum.equals(expectedChecksum)) {
+            PacketWriter.sendError(out, "Checksum invalido — chunk corrompido");
+            return;
+        }
+        storageService.saveChunk(fileId, chunkIndex, data);
         PacketWriter.sendSuccess(out, "Chunk salvo");
     }
 
