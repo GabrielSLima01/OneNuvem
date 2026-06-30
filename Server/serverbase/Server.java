@@ -9,8 +9,7 @@ public class Server {
         try (ServerSocket serverSocket = new ServerSocket(ServerConfig.PORT)) {
 
             FileStorageService storageService = new FileStorageService(ServerConfig.STORAGE_PATH);
-
-            System.out.println("Nó iniciado na porta " + ServerConfig.PORT);
+            NodeLogger.info("server_start", "Nó iniciado na porta: " + ServerConfig.PORT);
 
             while (true) {
                 Socket clientSocket = serverSocket.accept();
@@ -19,7 +18,7 @@ public class Server {
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
+            NodeLogger.error("Server_fatal", "Falha ao iniciar o servidor: " + e.getMessage());
         }
     }
 }
