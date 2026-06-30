@@ -8,8 +8,7 @@ import java.util.concurrent.Executors;
 
 public class Server {
     public static void main(String[] args) {
-        ExecutorService threadPool =
-                Executors.newFixedThreadPool(ServerConfig.WORKER_THREADS);
+        ExecutorService threadPool = Executors.newFixedThreadPool(ServerConfig.WORKER_THREADS);
 
         try (ServerSocket serverSocket = new ServerSocket(ServerConfig.PORT)) {
 
