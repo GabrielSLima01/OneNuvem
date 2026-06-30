@@ -3,6 +3,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import Server.serverbase.NodeLogger;
 
 public class FileStorageService {
 
@@ -20,6 +21,7 @@ public class FileStorageService {
         Path path = chunkPath(fileId, chunkIndex);
         Files.createDirectories(path.getParent());
         Files.write(path, data);
+        NodeLogger.info("file_storage", "Arquivo salvo: " + fileId);
     }
 
     public byte[] readChunk(String fileId, int chunkIndex) throws IOException {
