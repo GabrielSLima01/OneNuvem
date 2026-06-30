@@ -63,6 +63,13 @@ public class ClientHandler implements Runnable {
             return;
         }
 
+        // se ja existe ent não reescreve, retorna sucesso
+        if (storageService.chunkExists(fileId, chunkIndex)) {
+            NodeLogger.info("store_chunk", "Chunk já existente, reescrita ignorada: fileId=" + fileId + " chunk=" + chunkIndex);
+            PacketWriter.sendSuccess(out, "Chunk ja existe");
+            return;
+        }
+
         storageService.saveChunk(fileId, chunkIndex, data);
         NodeLogger.info("store_chunk", "Chunk salvo: fileId=" + fileId + " chunk=" + chunkIndex);
         PacketWriter.sendSuccess(out, "Chunk salvo");

@@ -17,11 +17,15 @@ public class FileStorageService {
         }
     }
 
+    public boolean chunkExists(String fileId, int chunkIndex) {
+        return Files.exists(chunkPath(fileId, chunkIndex));
+    }
+
     public void saveChunk(String fileId, int chunkIndex, byte[] data) throws IOException {
         Path path = chunkPath(fileId, chunkIndex);
         Files.createDirectories(path.getParent());
         Files.write(path, data);
-        NodeLogger.info("file_storage", "Arquivo salvo: " + fileId);
+        NodeLogger.info("file_storage", "Chunk salvo: fileId=" + fileId + " chunk=" + chunkIndex);
     }
 
     public byte[] readChunk(String fileId, int chunkIndex) throws IOException {
